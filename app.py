@@ -71,6 +71,7 @@ with st.sidebar:
     st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 # Main content
+if page == "🏠 Dashboard":
     # Professional Market Hub
     st.markdown('<h1 class="main-header">📈 Quantum Finance Workspace</h1>', unsafe_allow_html=True)
     
@@ -320,28 +321,28 @@ elif page == "🤖 AI Predictions":
                     st.error("Training Interrupted")
     st.markdown('</div>', unsafe_allow_html=True)
         
-        if st.button("Run Analytics Engine", use_container_width=True):
-            with st.spinner("Generating deep-learning forecast..."):
-                predictions = predictor.predict(ticker, days=7)
+    if st.button("Run Analytics Engine", use_container_width=True):
+        with st.spinner("Generating deep-learning forecast..."):
+            predictions = predictor.predict(ticker, days=7)
+            
+            if predictions:
+                st.success("AI Analytics Ready.")
                 
-                if predictions:
-                    st.success("AI Analytics Ready.")
-                    
-                    st.markdown('<div class="card">', unsafe_allow_html=True)
-                    st.subheader(f"Forecast Horizon: {ticker}")
-                    # Show predictions in a clean card
-                    pred_df = pd.DataFrame(predictions)
-                    pred_df.columns = ['Date', 'Price Target']
-                    st.dataframe(pred_df, use_container_width=True, hide_index=True)
-                    
-                    # Chart
-                    historical_data = st.session_state.fetcher.get_historical_data(ticker, period='3mo')
-                    if historical_data is not None:
-                        fig = Charts.prediction_chart(historical_data, predictions, ticker)
-                        st.plotly_chart(fig, use_container_width=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                else:
-                    st.error("Engine requires recent training pulse.")
+                st.markdown('<div class="card">', unsafe_allow_html=True)
+                st.subheader(f"Forecast Horizon: {ticker}")
+                # Show predictions in a clean card
+                pred_df = pd.DataFrame(predictions)
+                pred_df.columns = ['Date', 'Price Target']
+                st.dataframe(pred_df, use_container_width=True, hide_index=True)
+                
+                # Chart
+                historical_data = st.session_state.fetcher.get_historical_data(ticker, period='3mo')
+                if historical_data is not None:
+                    fig = Charts.prediction_chart(historical_data, predictions, ticker)
+                    st.plotly_chart(fig, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.error("Engine requires recent training pulse.")
 
 elif page == "📰 Sentiment":
     st.markdown('<h1 class="main-header">📰 Sentiment Analysis</h1>', 
