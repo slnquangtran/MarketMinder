@@ -12,6 +12,8 @@ THEME_COLORS = {
     "surface": "#16161E",
     "primary": "#0066FF",
     "accent": "#3B82F6",
+    "success": "#00C853",
+    "danger": "#FF3D00",
     "text": "#E1E1E6",
     "grid": "#1E293B"
 }

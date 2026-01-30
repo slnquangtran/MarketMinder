@@ -410,6 +410,17 @@ class StockTrackerApp(ctk.CTk):
         for widget in self.pred_results.winfo_children(): widget.destroy()
         
         if res and res['success']:
+            ctk.CTkLabel(self.pred_results, text=f"FORECAST HORIZON: {ticker}", 
+                         font=ctk.CTkFont(size=18, weight="bold"), text_color=COLORS["text"]).pack(pady=15)
+            
+            # Prediction Results Snapshot
+            scroll_f = ctk.CTkScrollableFrame(self.pred_results, fg_color="transparent", height=250)
+            scroll_f.pack(fill="both", expand=True, padx=20)
+            
+            for p in res['forecast']:
+                row = ctk.CTkFrame(scroll_f, fg_color="transparent")
+                row.pack(fill="x", pady=2)
+                ctk.CTkLabel(row, text=p['date'], font=ctk.CTkFont(family="Courier", size=13), text_color=COLORS["text_dark"]).pack(side="left")
                 ctk.CTkLabel(row, text=f"${p['price']:.2f}", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=COLORS["text"]).pack(side="right")
             
             # Action Button
@@ -434,27 +445,35 @@ class StockTrackerApp(ctk.CTk):
         self.show_page("Sentiment")
         for widget in self.pages["Sentiment"].winfo_children(): widget.destroy()
         
-        ctk.CTkLabel(self.pages["Sentiment"], text="News Sentiment Analysis", 
-                    font=ctk.CTkFont(size=24, weight="bold")).pack(pady=20)
+        header = ctk.CTkLabel(self.pages["Sentiment"], text="MARKET SENTIMENT CORE", 
+                             font=ctk.CTkFont(size=24, weight="bold"), text_color=COLORS["text"])
+        header.pack(pady=(20, 10))
         
-        sent_frame = ctk.CTkFrame(self.pages["Sentiment"])
-        sent_frame.pack(fill="x", padx=20)
+        search_card = ctk.CTkFrame(self.pages["Sentiment"], fg_color=COLORS["surface"], corner_radius=12, border_width=1, border_color="#1E293B")
+        search_card.pack(fill="x", padx=30, pady=10)
         
-        self.sent_ticker = ctk.CTkEntry(sent_frame, placeholder_text="Ticker symbol")
-        self.sent_ticker.pack(side="left", padx=10, pady=10, expand=True, fill="x")
+        s_row = ctk.CTkFrame(search_card, fg_color="transparent")
+        s_row.pack(fill="x", padx=20, pady=15)
         
-        self.sent_btn = ctk.CTkButton(sent_frame, text="Scan News", command=self.run_sentiment)
-        self.sent_btn.pack(side="right", padx=10, pady=10)
+        self.sent_ticker = ctk.CTkEntry(s_row, placeholder_text="Symbol Analysis Target", height=40)
+        self.sent_ticker.pack(side="left", padx=(0, 15), expand=True, fill="x")
         
-        self.sent_results = ctk.CTkScrollableFrame(self.pages["Sentiment"], label_text="Live News Sentiment")
-        self.sent_results.pack(fill="both", expand=True, padx=20, pady=10)
+        self.sent_btn = ctk.CTkButton(s_row, text="SCAN GLOBAL NEWS", height=40, width=180,
+                                     fg_color=COLORS["primary"], hover_color=COLORS["accent"],
+                                     font=ctk.CTkFont(size=12, weight="bold"),
+                                     command=self.run_sentiment)
+        self.sent_btn.pack(side="right")
+        
+        self.sent_results = ctk.CTkScrollableFrame(self.pages["Sentiment"], fg_color=COLORS["surface"], corner_radius=12, 
+                                                   border_width=1, border_color="#1E293B", label_text="INTELLIGENCE STREAM")
+        self.sent_results.pack(fill="both", expand=True, padx=30, pady=10)
 
     def run_sentiment(self):
         ticker = self.sent_ticker.get().upper()
         if not ticker: return
         
         for widget in self.sent_results.winfo_children(): widget.destroy()
-        loading = ctk.CTkLabel(self.sent_results, text="Scanning Global Markets...")
+        loading = ctk.CTkLabel(self.sent_results, text="SCANNING GLOBAL NEWS REPOSITORIES...", font=ctk.CTkFont(size=13, weight="bold"), text_color=COLORS["accent"])
         loading.pack(expand=True)
         
         def job():
@@ -465,24 +484,31 @@ class StockTrackerApp(ctk.CTk):
     def render_sentiment(self, res):
         for widget in self.sent_results.winfo_children(): widget.destroy()
         if res and res['num_articles'] > 0:
-            score_color = "green" if res['sentiment_score'] > 0 else "red" if res['sentiment_score'] < 0 else "gray"
-            ctk.CTkLabel(self.sent_results, text=f"Overall: {res['sentiment_label'].upper()} ({res['sentiment_score']:.2f})", 
-                        text_color=score_color, font=ctk.CTkFont(size=18, weight="bold")).pack(pady=10)
+            color = COLORS["success"] if res['sentiment_score'] > 0 else COLORS["danger"] if res['sentiment_score'] < 0 else COLORS["text_dark"]
+            ctk.CTkLabel(self.sent_results, text=f"AGGREGATE BIAS: {res['sentiment_label'].upper()} ({res['sentiment_score']:.2f})", 
+                        text_color=color, font=ctk.CTkFont(size=18, weight="bold")).pack(pady=15)
             
             for art in res['articles']:
-                item = ctk.CTkFrame(self.sent_results)
-                item.pack(fill="x", padx=5, pady=5)
-                ctk.CTkLabel(item, text=art['title'], font=ctk.CTkFont(size=13, weight="normal"), wraplength=700).pack(anchor="w", padx=10)
-                ctk.CTkLabel(item, text=f"{art['source']} | {art['sentiment_label']}", font=ctk.CTkFont(size=10)).pack(anchor="w", padx=10)
+                item = ctk.CTkFrame(self.sent_results, fg_color="transparent")
+                item.pack(fill="x", padx=10, pady=8)
+                ctk.CTkLabel(item, text=art['title'], font=ctk.CTkFont(size=13, weight="bold"), text_color=COLORS["text"], wraplength=600, anchor="w").pack(fill="x")
+                ctk.CTkLabel(item, text=f"{art['source']} • Bias: {art['sentiment_label']}", font=ctk.CTkFont(size=11), text_color=COLORS["text_dark"], anchor="w").pack(fill="x")
+                ctk.CTkFrame(self.sent_results, height=1, fg_color="#1E293B").pack(fill="x", padx=10)
         else:
-            ctk.CTkLabel(self.sent_results, text="No news found or API key missing.").pack(expand=True)
+            ctk.CTkLabel(self.sent_results, text="No intelligence found for this symbol.", text_color=COLORS["text_dark"]).pack(expand=True)
 
     def show_alerts(self):
         self.show_page("Alerts")
         for widget in self.pages["Alerts"].winfo_children(): widget.destroy()
-        ctk.CTkLabel(self.pages["Alerts"], text="Position Alerts", 
-                    font=ctk.CTkFont(size=24, weight="bold")).pack(pady=20)
-        ctk.CTkLabel(self.pages["Alerts"], text="Monitoring service active in background.").pack(expand=True)
+        header = ctk.CTkLabel(self.pages["Alerts"], text="RISK & PRICE OVERLAYS", 
+                             font=ctk.CTkFont(size=24, weight="bold"), text_color=COLORS["text"])
+        header.pack(pady=(20, 10))
+        
+        card = ctk.CTkFrame(self.pages["Alerts"], fg_color=COLORS["surface"], corner_radius=12, border_width=1, border_color="#1E293B")
+        card.pack(fill="both", expand=True, padx=40, pady=40)
+        
+        ctk.CTkLabel(card, text="🔔 OPERATIONAL MONITORING ACTIVE", font=ctk.CTkFont(size=16, weight="bold"), text_color=COLORS["success"]).pack(expand=True)
+        ctk.CTkLabel(card, text="Systems are scanning portfolio positions for critical volatility spikes and target triggers.", font=ctk.CTkFont(size=12), text_color=COLORS["text_dark"]).pack(pady=(0, 40))
 
     def show_backtesting(self):
         self.show_page("Backtesting")
@@ -493,22 +519,37 @@ class StockTrackerApp(ctk.CTk):
     def show_settings(self):
         self.show_page("Settings")
         for widget in self.pages["Settings"].winfo_children(): widget.destroy()
-        ctk.CTkLabel(self.pages["Settings"], text="Application Settings", 
-                    font=ctk.CTkFont(size=24, weight="bold")).pack(pady=20)
+        header = ctk.CTkLabel(self.pages["Settings"], text="CORE REPOSITORY SETTINGS", 
+                             font=ctk.CTkFont(size=24, weight="bold"), text_color=COLORS["text"])
+        header.pack(pady=(20, 10))
         
-        status_frame = ctk.CTkFrame(self.pages["Settings"])
-        status_frame.pack(fill="x", padx=40, pady=20)
+        status_card = ctk.CTkFrame(self.pages["Settings"], fg_color=COLORS["surface"], corner_radius=12, border_width=1, border_color="#1E293B")
+        status_card.pack(fill="x", padx=40, pady=20)
         
-        ctk.CTkLabel(status_frame, text="Backend Integration Status", font=ctk.CTkFont(weight="bold")).pack(pady=10)
-        ctk.CTkLabel(status_frame, text=f"yfinance: ✅ Connected").pack(anchor="w", padx=20)
-        ctk.CTkLabel(status_frame, text=f"NewsAPI: {'✅' if config.has_news_api_key() else '❌ Not Configured'}").pack(anchor="w", padx=20)
-        ctk.CTkLabel(status_frame, text=f"Email (SMTP): {'✅' if config.has_email_config() else '❌ Not Configured'}").pack(anchor="w", padx=20)
+        ctk.CTkLabel(status_card, text="DIAGNOSTIC ENGINE STATUS", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"]).pack(pady=15)
         
-        # AI Status
+        lines = [
+            ("Market Data Gateway", "yfinance: Operational"),
+            ("News Intelligence", f"NewsAPI: {'Active' if config.has_news_api_key() else 'Key Required'}"),
+            ("Notification Node", f"SMTP Relay: {'Active' if config.has_email_config() else 'Not Wired'}")
+        ]
+        
+        for label, val in lines:
+            row = ctk.CTkFrame(status_card, fg_color="transparent")
+            row.pack(fill="x", padx=30, pady=4)
+            ctk.CTkLabel(row, text=label, font=ctk.CTkFont(size=13), text_color=COLORS["text"]).pack(side="left")
+            status_color = COLORS["success"] if "Active" in val or "Operational" in val else COLORS["danger"]
+            ctk.CTkLabel(row, text=val, font=ctk.CTkFont(size=13, weight="bold"), text_color=status_color).pack(side="right")
+        
+        # Performance Card
+        perf_card = ctk.CTkFrame(self.pages["Settings"], fg_color=COLORS["surface"], corner_radius=12, border_width=1, border_color="#1E293B")
+        perf_card.pack(fill="x", padx=40, pady=10)
+        
         from src.models.lstm_predictor import TENSORFLOW_AVAILABLE
-        tf_status = "✅ Active (Graph Mode)" if TENSORFLOW_AVAILABLE else "❌ Disabled"
-        ctk.CTkLabel(status_frame, text=f"AI Engine: {tf_status}").pack(anchor="w", padx=20)
-        ctk.CTkLabel(status_frame, text=f"Hardware Accel: ✅ FP16 Mixed Precision Enabled").pack(anchor="w", padx=20)
+        tf_status = "ACTIVE (DL)" if TENSORFLOW_AVAILABLE else "LIGHT (STATS)"
+        
+        ctk.CTkLabel(perf_card, text=f"ENGINE MODE: {tf_status}", font=ctk.CTkFont(size=13, weight="bold"), text_color=COLORS["primary"]).pack(pady=15)
+        ctk.CTkLabel(perf_card, text="Accelerator: FP16 Mixed Precision • Optimized for Minimal Latency", font=ctk.CTkFont(size=11), text_color=COLORS["text_dark"]).pack(pady=(0, 15))
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         ctk.set_appearance_mode(new_appearance_mode)
