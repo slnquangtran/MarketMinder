@@ -53,11 +53,13 @@ if 'portfolio' not in st.session_state:
     st.session_state.portfolio = Portfolio()
 if 'fetcher' not in st.session_state:
     st.session_state.fetcher = StockFetcher()
+if 'predictor' not in st.session_state:
+    st.session_state.predictor = LSTMPredictor()
 
 # Sidebar
 with st.sidebar:
     st.image("https://via.placeholder.com/200x80/667eea/ffffff?text=Stock+Tracker+Pro", 
-             use_container_width=True)
+             width='stretch')
     st.markdown("---")
     
     page = st.radio(
@@ -134,7 +136,7 @@ if page == "🏠 Dashboard":
         ticker = st.text_input("Enter ticker symbol", placeholder="AAPL", key="dash_lookup").upper()
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        lookup_btn = st.button("Query Market", use_container_width=True)
+        lookup_btn = st.button("Query Market", width='stretch')
     
     if lookup_btn and ticker:
         with st.spinner(f"Querying {ticker}..."):
@@ -169,7 +171,7 @@ elif page == "💼 Portfolio":
             purchase_price = st.number_input("Execution Price ($)", min_value=0.01, value=100.0)
             purchase_date = st.date_input("Settlement Date", value=datetime.now())
         
-        if st.button("Execute Order", use_container_width=True):
+        if st.button("Execute Order", width='stretch'):
             if ticker:
                 success = st.session_state.portfolio.add_stock(
                     ticker, quantity, purchase_price, purchase_date.strftime('%Y-%m-%d')
@@ -223,7 +225,7 @@ elif page == "💼 Portfolio":
         
         with col2:
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Export Portfolio", use_container_width=True):
+            if st.button("Export Portfolio", width='stretch'):
                 summary = st.session_state.portfolio.get_summary()
                 filepath = exporter.export_portfolio(summary, export_format.lower())
                 st.success(f"Portfolio exported to: {filepath}")
@@ -244,12 +246,12 @@ elif page == "📊 Analysis":
                 with tab1:
                     st.subheader(f"{ticker} Price Chart")
                     fig = Charts.candlestick_chart(data, ticker)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 
                 with tab2:
                     st.subheader("Technical Indicators")
                     fig = Charts.technical_indicators_chart(data, ticker)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                     
                     st.markdown('<div class="card">', unsafe_allow_html=True)
                     st.subheader("Technical Signal Dashboard")
@@ -312,18 +314,18 @@ elif page == "🤖 AI Predictions":
         ticker = st.text_input("Predictive Ticker Target", placeholder="AAPL", key="pred_lookup").upper()
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Optimize Weights", use_container_width=True):
+        if st.button("Optimize Weights", width='stretch'):
             with st.spinner(f"Fine-tuning model for {ticker}..."):
-                result = predictor.train(ticker)
+                result = st.session_state.predictor.train(ticker)
                 if result.get('success'):
                     st.success("Optimization Complete")
                 else:
                     st.error("Training Interrupted")
     st.markdown('</div>', unsafe_allow_html=True)
         
-    if st.button("Run Analytics Engine", use_container_width=True):
+    if st.button("Run Analytics Engine", width='stretch'):
         with st.spinner("Generating deep-learning forecast..."):
-            predictions = predictor.predict(ticker, days=7)
+            predictions = st.session_state.predictor.predict(ticker, days=7)
             
             if predictions:
                 st.success("AI Analytics Ready.")
@@ -333,13 +335,13 @@ elif page == "🤖 AI Predictions":
                 # Show predictions in a clean card
                 pred_df = pd.DataFrame(predictions)
                 pred_df.columns = ['Date', 'Price Target']
-                st.dataframe(pred_df, use_container_width=True, hide_index=True)
+                st.dataframe(pred_df, width='stretch', hide_index=True)
                 
                 # Chart
                 historical_data = st.session_state.fetcher.get_historical_data(ticker, period='3mo')
                 if historical_data is not None:
                     fig = Charts.prediction_chart(historical_data, predictions, ticker)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.error("Engine requires recent training pulse.")
@@ -357,7 +359,7 @@ elif page == "📰 Sentiment":
         ticker = st.text_input("Enter ticker symbol", placeholder="AAPL").upper()
         company_name = st.text_input("Company name (optional)", placeholder="Apple Inc.")
         
-        if st.button("Analyze Sentiment", use_container_width=True):
+        if st.button("Analyze Sentiment", width='stretch'):
             with st.spinner(f"Analyzing sentiment for {ticker}..."):
                 sentiment = analyzer.analyze_stock(ticker, company_name or None)
                 
@@ -437,7 +439,7 @@ elif page == "📈 Backtesting":
         start_date = st.date_input("Start Date", value=pd.Timestamp.now() - pd.Timedelta(days=365))
         initial_capital = st.number_input("Initial Capital ($)", value=10000, min_value=100)
     
-    if st.button("Run Backtest", use_container_width=True):
+    if st.button("Run Backtest", width='stretch'):
         with st.spinner(f"Backtesting {strategy} strategy on {ticker}..."):
             result = backtester.run_strategy(
                 ticker, strategy, 
