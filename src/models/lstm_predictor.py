@@ -28,6 +28,12 @@ except ImportError:
     TENSORFLOW_AVAILABLE = False
     print("Warning: TensorFlow not available. LSTM predictions will be disabled.")
 
+# Decorator fallback for environments without TensorFlow
+def tf_function(func):
+    if TENSORFLOW_AVAILABLE:
+        return tf.function(func)
+    return func
+
 from src.data.stock_fetcher import StockFetcher
 from src.analysis.technical_indicators import TechnicalIndicators
 from src.models.sentiment_analyzer import SentimentAnalyzer
@@ -178,7 +184,7 @@ class LSTMPredictor:
         self.save_model(ticker)
         return {'success': True, 'ticker': ticker}
     
-    @tf.function
+    @tf_function
     def _compiled_predict(self, X_pred):
         """Accelerated static graph inference."""
         return self.model(X_pred, training=False)
