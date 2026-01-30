@@ -37,8 +37,7 @@ A high-performance, institutional-grade desktop analytics and prediction suite. 
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/slnquangtran/StockTracker.git
-   cd stock-tracker
+   git clone https://github.com/slnquangtran/MarketMinder.git
    ```
 
 2. **Set up virtual environment**:
