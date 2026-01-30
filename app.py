@@ -10,7 +10,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from src.models.portfolio import Portfolio
 from src.data.stock_fetcher import StockFetcher
-from src.models.lstm_predictor import LSTMPredictor
+from src.models.lstm_predictor import LSTMPredictor, TENSORFLOW_AVAILABLE
+from src.models.arima_predictor import ARIMAPredictor
 from src.models.sentiment_analyzer import SentimentAnalyzer
 from src.models.anomaly_detector import AnomalyDetector
 from src.models.recommender import Recommender
@@ -49,10 +50,12 @@ else:
     """, unsafe_allow_html=True)
 
 # Initialize session state
-if 'portfolio' not in st.session_state:
-    st.session_state.portfolio = Portfolio()
 if 'fetcher' not in st.session_state:
     st.session_state.fetcher = StockFetcher()
+if 'predictor' not in st.session_state:
+    st.session_state.predictor = LSTMPredictor()
+if 'arima_predictor' not in st.session_state:
+    st.session_state.arima_predictor = ARIMAPredictor()
 if 'predictor' not in st.session_state:
     st.session_state.predictor = LSTMPredictor()
 
@@ -304,47 +307,88 @@ elif page == "📊 Analysis":
                 st.error(f"Could not fetch data for {ticker}")
 
 elif page == "🤖 AI Predictions":
-    st.markdown('<h1 class="main-header">🤖 AI Price Predictions</h1>', 
+    st.markdown('<h1 class="main-header">🤖 AI Predictive Intelligence</h1>', 
                 unsafe_allow_html=True)
     
+    # Engine Status Info Card
+    with st.expander("ℹ️ Intelligence Engine Blueprint"):
+        st.markdown(f"""
+        **Active Model Strategy:** 
+        - {'🚀 **Deep Learning (Bi-GRU)**' if TENSORFLOW_AVAILABLE else '📊 **Statistical (ARIMA)**'}
+        
+        **Description:**
+        This workspace uses {'Bidirectional Gated Recurrent Units for pattern recognition' if TENSORFLOW_AVAILABLE else 'Auto-Regressive Integrated Moving Averages for statistical trend projection'}. 
+        {'TensorFlow Mixed Precision is accelerating your forecasts.' if TENSORFLOW_AVAILABLE else 'Running in high-reliability statistical mode.'}
+        """)
+
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Model Configuration")
-    col1, col2 = st.columns([3, 1])
+    st.subheader("Model Targeting & Optimization")
+    col1, col2 = st.columns([2, 1])
     with col1:
-        ticker = st.text_input("Predictive Ticker Target", placeholder="AAPL", key="pred_lookup").upper()
+        ticker = st.text_input("Enter Ticker Target (e.g. BTC-USD, AAPL)", placeholder="AAPL", key="pred_lookup").upper()
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Optimize Weights", width='stretch'):
-            with st.spinner(f"Fine-tuning model for {ticker}..."):
-                result = st.session_state.predictor.train(ticker)
-                if result.get('success'):
-                    st.success("Optimization Complete")
-                else:
-                    st.error("Training Interrupted")
+        if TENSORFLOW_AVAILABLE:
+            if st.button("Recalibrate AI Weights", width='stretch'):
+                with st.spinner(f"Fine-tuning Deep Learning model for {ticker}..."):
+                    result = st.session_state.predictor.train(ticker)
+                    if result.get('success'):
+                        st.success("Calibration Successful: Weights Updated.")
+                    else:
+                        st.error(f"Calibration Failed: {result.get('error', 'Unknown Error')}")
+        else:
+            st.info("💡 ARIMA Mode: No manual training pulse required.")
     st.markdown('</div>', unsafe_allow_html=True)
         
-    if st.button("Run Analytics Engine", width='stretch'):
-        with st.spinner("Generating deep-learning forecast..."):
-            predictions = st.session_state.predictor.predict(ticker, days=7)
-            
-            if predictions:
-                st.success("AI Analytics Ready.")
+    if st.button("💡 Execute Forecast Command", width='stretch'):
+        if not ticker:
+            st.warning("Identification Required: Please enter a Ticker Symbol.")
+        else:
+            with st.spinner(f"Generating {'Deep Learning' if TENSORFLOW_AVAILABLE else 'ARIMA'} forecast..."):
+                if TENSORFLOW_AVAILABLE:
+                    predictions = st.session_state.predictor.predict(ticker, days=7)
+                else:
+                    # Fallback to ARIMA
+                    data = st.session_state.fetcher.get_historical_data(ticker, period='2y')
+                    if data is not None:
+                        res = st.session_state.arima_predictor.predict(data['Close'], days=7)
+                        if res['success']:
+                            predictions = [{'date': p['date'], 'predicted_price': p['price']} for p in res['forecast']]
+                        else:
+                            predictions = None
+                    else:
+                        predictions = None
                 
-                st.markdown('<div class="card">', unsafe_allow_html=True)
-                st.subheader(f"Forecast Horizon: {ticker}")
-                # Show predictions in a clean card
-                pred_df = pd.DataFrame(predictions)
-                pred_df.columns = ['Date', 'Price Target']
-                st.dataframe(pred_df, width='stretch', hide_index=True)
-                
-                # Chart
-                historical_data = st.session_state.fetcher.get_historical_data(ticker, period='3mo')
-                if historical_data is not None:
-                    fig = Charts.prediction_chart(historical_data, predictions, ticker)
-                    st.plotly_chart(fig, width='stretch')
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.error("Engine requires recent training pulse.")
+                if predictions:
+                    st.success(f"{'DL' if TENSORFLOW_AVAILABLE else 'ARIMA'} Analytics Synchronized.")
+                    
+                    st.markdown('<div class="card">', unsafe_allow_html=True)
+                    st.subheader(f"7-Day Forecast Horizon: {ticker}")
+                    
+                    # Layout for data + chart
+                    c1, c2 = st.columns([1, 2])
+                    with c1:
+                        # Show predictions in a clean card
+                        pred_df = pd.DataFrame(predictions)
+                        pred_df.columns = ['Date', 'Projected Price']
+                        st.dataframe(pred_df, width='stretch', hide_index=True)
+                        
+                        # Risk/Confidence metric placeholder
+                        change = ((predictions[-1]['predicted_price'] / predictions[0]['predicted_price']) - 1) * 100
+                        st.metric("Proj. 7-Day Δ", f"{change:+.2f}%", 
+                                 "BULLISH" if change > 0 else "BEARISH")
+                    
+                    with c2:
+                        historical_data = st.session_state.fetcher.get_historical_data(ticker, period='3mo')
+                        if historical_data is not None:
+                            fig = Charts.prediction_chart(historical_data, predictions, ticker)
+                            st.plotly_chart(fig, width='stretch')
+                    st.markdown('</div>', unsafe_allow_html=True)
+                else:
+                    if TENSORFLOW_AVAILABLE:
+                        st.error("Engine requires recent training pulse. Click 'Recalibrate AI Weights' above.")
+                    else:
+                        st.error("Market data stream interrupted or insufficient historical depth.")
 
 elif page == "📰 Sentiment":
     st.markdown('<h1 class="main-header">📰 Sentiment Analysis</h1>', 
